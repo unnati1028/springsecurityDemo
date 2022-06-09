@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,6 +49,8 @@ public class AuthController {
 	@Autowired
 	JwtUtils jwtUtils;
 
+	@Autowired
+	PasswordEncoder passwordEncoder;
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 		// custom Response
@@ -86,7 +89,7 @@ public class AuthController {
 		// to register new user ====> we need details in user entity
 		// user entity based on user entity
 
-		User user = new User(signupRequest.getUsername(), signupRequest.getEmail(), signupRequest.getPassword());
+		User user = new User(signupRequest.getUsername(), signupRequest.getEmail(), passwordEncoder.encode(signupRequest.getPassword()));
 		Set<String> strRoles = signupRequest.getRole();
 		Set<Role> roles = new HashSet<>();
 
