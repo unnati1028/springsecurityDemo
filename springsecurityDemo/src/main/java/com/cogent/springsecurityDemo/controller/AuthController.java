@@ -1,7 +1,9 @@
 package com.cogent.springsecurityDemo.controller;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
@@ -10,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +28,8 @@ import com.cogent.springsecurityDemo.payload.response.JwtResponse;
 import com.cogent.springsecurityDemo.payload.response.MessageResponse;
 import com.cogent.springsecurityDemo.repository.RoleRepository;
 import com.cogent.springsecurityDemo.repository.UserRepository;
+import com.cogent.springsecurityDemo.security.jwt.JwtUtils;
+import com.cogent.springsecurityDemo.security.service.UserDetailsImpl;
 
 @CrossOrigin("*")
 @RestController
@@ -40,6 +45,9 @@ public class AuthController {
 	@Autowired
 	AuthenticationManager authenticationManager;
 
+	@Autowired
+	JwtUtils jwtUtils;
+
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 		// custom Response
@@ -51,7 +59,14 @@ public class AuthController {
 				new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 		// jwtUtils will help us to get the token
 
-		return ResponseEntity.ok(new JwtResponse(null, null, null, null, null));
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+		UserDetailsImpl userDetailsImpl = (UserDetailsImpl) authentication.getPrincipal();
+		String jwt = jwtUtils.generateJwtToken(authentication);
+
+		List<String> roles = userDetailsImpl.getAuthorities().stream().map(item -> item.getAuthority())
+				.collect(Collectors.toList());
+		return ResponseEntity.ok(new JwtResponse(jwt, userDetailsImpl.getId(), userDetailsImpl.getUsername(),
+				userDetailsImpl.getEmail(), roles));
 	}
 
 	@PostMapping("/signup")

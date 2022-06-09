@@ -27,9 +27,9 @@ public class UserDetailsImpl implements UserDetails {
 
 	public UserDetailsImpl(Long id, String username, String email, String password,
 			Collection<? extends GrantedAuthority> authorities) {
-		this.id = id;
+		this.setId(id);
 		this.username = username;
-		this.email = email;
+		this.setEmail(email);
 		this.password = password;
 		this.authorities = authorities;
 	}
@@ -80,6 +80,22 @@ public class UserDetailsImpl implements UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return true;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 }
