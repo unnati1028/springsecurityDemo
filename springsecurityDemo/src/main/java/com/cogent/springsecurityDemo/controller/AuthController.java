@@ -7,6 +7,9 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,30 +30,59 @@ import com.cogent.springsecurityDemo.repository.UserRepository;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
 	@Autowired
 	UserRepository userRepository;
+
 	@Autowired
 	RoleRepository roleRepository;
 
-	@PostMapping("/signup")
-	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginrequest){
+	@Autowired
+	AuthenticationManager authenticationManager;
+
+	@PostMapping("/signin")
+	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+		// custom Response
+		// spring security
+		// ResponseEntity.status(200).body(object)
+
+		// validating the credentials
+		Authentication authentication = authenticationManager.authenticate(
+				new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+		// jwtUtils will help us to get the token
+
 		return ResponseEntity.ok(new JwtResponse(null, null, null, null, null));
 	}
-	
+
 	@PostMapping("/signup")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
+
+		// username should not be existing one
 		if (userRepository.existsByUsername(signupRequest.getUsername())) {
-			return ResponseEntity.badRequest().body(new MessageResponse("error : Username is already taken"));
+			return ResponseEntity.badRequest().body(new MessageResponse("error : username is already taken"));
 		}
+
+		// email exists
 		if (userRepository.existsByEmail(signupRequest.getEmail())) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+			return ResponseEntity.badRequest().body(new MessageResponse("error: email is already taken"));
 		}
+
+		// create the user
+		// to register new user ====> we need details in user entity
+		// user entity based on user entity
+
 		User user = new User(signupRequest.getUsername(), signupRequest.getEmail(), signupRequest.getPassword());
 		Set<String> strRoles = signupRequest.getRole();
 		Set<Role> roles = new HashSet<>();
+
 		if (strRoles == null) {
+			// do we need to apply default role i.e userRole.
+			// do we need to confirm the availability if user Role.
+			// does it exist or not?
+			// else throw the exception
+
 			Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-					.orElseThrow(() -> new RuntimeException("Error: Role not found"));
+					.orElseThrow(() -> new RuntimeException("Error: Role  Not Found"));
 			roles.add(userRole);
 		} else {
 			strRoles.forEach(role -> {
@@ -76,7 +108,6 @@ public class AuthController {
 		}
 		user.setRoles(roles);
 		userRepository.save(user);
-		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+		return ResponseEntity.ok(new MessageResponse("user Registered Successfully"));
 	}
-
 }
