@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cogent.springsecurityDemo.dto.Role;
 import com.cogent.springsecurityDemo.dto.User;
 import com.cogent.springsecurityDemo.enums.ERole;
+import com.cogent.springsecurityDemo.payload.request.LoginRequest;
 import com.cogent.springsecurityDemo.payload.request.SignupRequest;
+import com.cogent.springsecurityDemo.payload.response.JwtResponse;
 import com.cogent.springsecurityDemo.payload.response.MessageResponse;
 import com.cogent.springsecurityDemo.repository.RoleRepository;
 import com.cogent.springsecurityDemo.repository.UserRepository;
@@ -30,6 +32,11 @@ public class AuthController {
 	@Autowired
 	RoleRepository roleRepository;
 
+	@PostMapping("/signup")
+	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginrequest){
+		return ResponseEntity.ok(new JwtResponse(null, null, null, null, null));
+	}
+	
 	@PostMapping("/signup")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
 		if (userRepository.existsByUsername(signupRequest.getUsername())) {
