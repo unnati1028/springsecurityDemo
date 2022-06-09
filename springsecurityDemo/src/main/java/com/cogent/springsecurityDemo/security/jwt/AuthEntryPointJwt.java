@@ -1,6 +1,8 @@
 package com.cogent.springsecurityDemo.security.jwt;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -16,7 +18,6 @@ public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
 	private static final Logger logger = LoggerFactory.getLogger(AuthEntryPointJwt.class);
 
-	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException authException) throws IOException, ServletException {
 		logger.error("Unauthorized error :{}", authException.getMessage());
@@ -27,7 +28,8 @@ public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 		body.put("error", "Unauthorized");
 		body.put("message", authException.getMessage());
 		body.put("path", request.getServletPath());
-
+		final ObjectMapper mapper = new ObjectMapper();
+		mapper.writeValue(response.getOutputStream(), body);
 	}
 
 }
