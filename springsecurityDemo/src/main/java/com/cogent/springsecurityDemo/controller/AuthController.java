@@ -36,93 +36,96 @@ import com.cogent.springsecurityDemo.security.service.UserDetailsImpl;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
+	
 	@Autowired
 	UserRepository userRepository;
-
+	
 	@Autowired
 	RoleRepository roleRepository;
-
+	
 	@Autowired
 	AuthenticationManager authenticationManager;
-
+	
 	@Autowired
 	JwtUtils jwtUtils;
-
+	
 	@Autowired
-	PasswordEncoder passwordEncoder;
+	PasswordEncoder encoder;
+	
 	@PostMapping("/signin")
-	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-		// custom Response
-		// spring security
-		// ResponseEntity.status(200).body(object)
+	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest){
+		//custom Response
+		//spring security
+		//ResponseEntity.status(200).body(object)
 
-		// validating the credentials
+		//validating the credentials
 		Authentication authentication = authenticationManager.authenticate(
-				new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-		// jwtUtils will help us to get the token
-
+				new UsernamePasswordAuthenticationToken
+				(loginRequest.getUsername(), loginRequest.getPassword()));
+		
 		SecurityContextHolder.getContext().setAuthentication(authentication);
-		UserDetailsImpl userDetailsImpl = (UserDetailsImpl) authentication.getPrincipal();
+		
 		String jwt = jwtUtils.generateJwtToken(authentication);
-
-		List<String> roles = userDetailsImpl.getAuthorities().stream().map(item -> item.getAuthority())
-				.collect(Collectors.toList());
-		return ResponseEntity.ok(new JwtResponse(jwt, userDetailsImpl.getId(), userDetailsImpl.getUsername(),
-				userDetailsImpl.getEmail(), roles));
+		UserDetailsImpl userDetailsImpl = (UserDetailsImpl) authentication.getPrincipal();
+		
+		List<String> roles = userDetailsImpl.getAuthorities().stream().map(item->item.getAuthority()).collect(Collectors.toList());
+		
+		//jwtUtils will help us to get the token
+		return ResponseEntity.ok(new JwtResponse(jwt,userDetailsImpl.getId()
+				,userDetailsImpl.getUsername()
+				,userDetailsImpl.getEmail(),roles));
 	}
-
 	@PostMapping("/signup")
-	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
-
-		// username should not be existing one
-		if (userRepository.existsByUsername(signupRequest.getUsername())) {
+	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest){
+		
+		//username should not be existing one
+		if(userRepository.existsByUsername(signupRequest.getUsername())){
 			return ResponseEntity.badRequest().body(new MessageResponse("error : username is already taken"));
 		}
-
-		// email exists
-		if (userRepository.existsByEmail(signupRequest.getEmail())) {
+		
+		//email exists
+		if(userRepository.existsByEmail(signupRequest.getEmail())) {
 			return ResponseEntity.badRequest().body(new MessageResponse("error: email is already taken"));
 		}
-
-		// create the user
+		
+		//create the user
 		// to register new user ====> we need details in user entity
-		// user entity based on user entity
-
-		User user = new User(signupRequest.getUsername(), signupRequest.getEmail(), passwordEncoder.encode(signupRequest.getPassword()));
+		//user entity based on user entity
+		
+		User user = new User(signupRequest.getUsername(),signupRequest.getEmail(),
+				encoder.encode(signupRequest.getPassword()));
 		Set<String> strRoles = signupRequest.getRole();
 		Set<Role> roles = new HashSet<>();
-
-		if (strRoles == null) {
-			// do we need to apply default role i.e userRole.
-			// do we need to confirm the availability if user Role.
-			// does it exist or not?
-			// else throw the exception
-
-			Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-					.orElseThrow(() -> new RuntimeException("Error: Role  Not Found"));
+		
+		if(strRoles == null) {
+			//do we need to apply default role i.e userRole. 
+			//do we need to confirm the availability if user Role. 
+			//does it exist or not? 
+			//else throw the exception
+			
+			Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(()->new RuntimeException("Error: Role  Not Found"));
 			roles.add(userRole);
 		} else {
-			strRoles.forEach(role -> {
-				switch (role) {
-				case "admin":
-					Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(adminRole);
+			 strRoles.forEach(role -> {
+			        switch (role) {
+			        case "admin":
+			          Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+			              .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+			          roles.add(adminRole);
 
-					break;
-				case "mod":
-					Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(modRole);
+			          break;
+			        case "mod":
+			          Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
+			              .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+			          roles.add(modRole);
 
-					break;
-				default:
-					Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(userRole);
-				}
-			});
+			          break;
+			        default:
+			          Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+			              .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+			          roles.add(userRole);
+			        }
+			      });
 		}
 		user.setRoles(roles);
 		userRepository.save(user);
